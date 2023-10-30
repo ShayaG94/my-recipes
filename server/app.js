@@ -1,5 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const Recipe = require("./models/recipe");
+const { Line } = require("./models/line");
 
 mongoose.set("strictQuery", true);
 mongoose.connect("mongodb://localhost:27017/my_recipes");
@@ -19,31 +21,46 @@ app.get("/", (req, res) => {
     res.send("Welcome my_recipes by K&G productions!");
 });
 
-app.get("/myrecipes", async (req, res) => {
-    res.send("<h1>My Recipes</h1>");
+app.get("/recipes", async (req, res) => {
+    const recipes = await Recipe.find();
+    res.json(recipes);
 });
 
-app.get("/myrecipes/new", (req, res) => {
+app.get("/recipes/new", (req, res) => {
     res.send("New recipe form");
 });
 
-app.post("/myrecipes", async (req, res) => {
-    res.send(`Submitted new recipe: ${req.body}`);
+app.post("/recipes", async (req, res) => {
+    const recipe = new Recipe(req.body.recipe);
+    for (let data of req.body.content) {
+        const line = new Line(data);
+        await line.save();
+        recipe.content.push(line);
+    }
+    await recipe.save();
+    res.json(recipe);
 });
 
-app.get("/myrecipes/:id", async (req, res) => {
+app.get("/recipes/:id", async (req, res) => {
     const { id } = req.params;
-    res.send(`Show one recipe with this ID: ${id}`);
+    const recipe = await Recipe.findById(id).populate("content");
+    res.json(recipe);
 });
 
-app.put("/myrecipes/:id", async (req, res) => {
+app.put("/recipes/:id", async (req, res) => {
     const { id } = req.params;
-    res.send(`Editing a recipe with ID: ${id}`);
+    const recipe = await Recipe.findByIdAndUpdate(id, { ...req.body.recipe });
+    for (let data of req.body.content) {
+        await Line.findByIdAndUpdate(data.id, data);
+    }
+    await recipe.populate("content");
+    res.json(recipe);
 });
 
-app.delete("/myrecipes/:id", async (req, res) => {
+app.delete("/recipes/:id", async (req, res) => {
     const { id } = req.params;
-    res.send(`Deleting a recipe with ID: ${id}`);
+    const deletedRecipe = await Recipe.findByIdAndDelete(id);
+    res.send(`Deleted a recipe: ${deletedRecipe.title}`);
 });
 
 app.listen(3300, () => {

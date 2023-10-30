@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { ingredients, units, dishes } = require("./seedHelpers");
 const Recipe = require("../models/recipe");
-const Line = require("../models/line");
+const { Line } = require("../models/line");
 
 mongoose.set("strictQuery", true);
 mongoose.connect("mongodb://localhost:27017/my_recipes");
@@ -32,6 +32,6 @@ const seedDB = async (limit) => {
     }
 };
 
-seedDB(5).then(() => {
+seedDB(10).then(() => {
     db.close();
 });
